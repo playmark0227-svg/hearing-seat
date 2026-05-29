@@ -6,7 +6,12 @@ const title = `${siteConfig.brand.name} — ${siteConfig.brand.role}`;
 const description =
   "想いを聴いてから、サイトをつくる。HP制作のための、丁寧なヒアリングから始まるWeb制作。";
 
+// Origin only — basePath is appended by Next automatically.
+const siteUrl =
+  process.env.NEXT_PUBLIC_SITE_URL || "https://playmark0227-svg.github.io";
+
 export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl),
   title: {
     default: title,
     template: `%s｜${siteConfig.brand.name}`,

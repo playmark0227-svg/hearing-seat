@@ -8,16 +8,20 @@ import {
   ArrowRight,
   Check,
   Copy,
+  Link2,
   Printer,
   RotateCcw,
+  Send,
   Sparkles,
 } from "lucide-react";
 import {
   QUESTS,
   isFieldFilled,
+  isQuestComplete,
   type Answers,
   type Field,
 } from "./quests";
+import { siteConfig } from "../site-config";
 
 const STORAGE_KEY = "brief.answers.v1";
 const STAGE_KEY = "brief.stage.v1";
@@ -45,13 +49,64 @@ function fieldBlocked(field: Field, value: unknown): boolean {
   return false;
 }
 
+/* ── URL-safe encode/decode of answers (for shareable links) ── */
+function encodeAnswers(a: Answers): string {
+  try {
+    const json = JSON.stringify(a);
+    const b64 = btoa(
+      encodeURIComponent(json).replace(/%([0-9A-F]{2})/g, (_, p) =>
+        String.fromCharCode(parseInt(p, 16)),
+      ),
+    );
+    return b64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  } catch {
+    return "";
+  }
+}
+
+function decodeAnswers(s: string): Answers | null {
+  try {
+    const b64 =
+      s.replace(/-/g, "+").replace(/_/g, "/") +
+      "===".slice((s.length + 3) % 4);
+    const bin = atob(b64);
+    const json = decodeURIComponent(
+      [...bin]
+        .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
+        .join(""),
+    );
+    const obj = JSON.parse(json);
+    if (obj && typeof obj === "object" && !Array.isArray(obj)) {
+      return obj as Answers;
+    }
+  } catch {
+    /* ignore */
+  }
+  return null;
+}
+
 export default function HearingPage() {
   const [answers, setAnswers] = useState<Answers>({});
   const [stage, setStage] = useState<Stage>(0);
+  const [maxReached, setMaxReached] = useState(0);
   const [hydrated, setHydrated] = useState(false);
+  const [loadedFromLink, setLoadedFromLink] = useState(false);
 
+  // ── Hydrate: shared link (#r=) takes precedence over localStorage ──
   useEffect(() => {
     try {
+      const hash = window.location.hash;
+      if (hash.startsWith("#r=")) {
+        const decoded = decodeAnswers(hash.slice(3));
+        if (decoded) {
+          setAnswers(decoded);
+          setStage("result");
+          setMaxReached(QUESTS.length - 1);
+          setLoadedFromLink(true);
+          setHydrated(true);
+          return;
+        }
+      }
       const a = localStorage.getItem(STORAGE_KEY);
       const s = localStorage.getItem(STAGE_KEY);
       if (a) setAnswers(JSON.parse(a));
@@ -70,15 +125,23 @@ export default function HearingPage() {
     setHydrated(true);
   }, []);
 
+  // Persist — but never clobber storage when we're just viewing a shared link.
   useEffect(() => {
-    if (!hydrated) return;
+    if (!hydrated || loadedFromLink) return;
     localStorage.setItem(STORAGE_KEY, JSON.stringify(answers));
-  }, [answers, hydrated]);
+  }, [answers, hydrated, loadedFromLink]);
 
   useEffect(() => {
-    if (!hydrated) return;
+    if (!hydrated || loadedFromLink) return;
     localStorage.setItem(STAGE_KEY, JSON.stringify(stage));
-  }, [stage, hydrated]);
+  }, [stage, hydrated, loadedFromLink]);
+
+  // Track the furthest section reached (for stepper navigation).
+  useEffect(() => {
+    setMaxReached((m) =>
+      Math.max(m, typeof stage === "number" ? stage : QUESTS.length - 1),
+    );
+  }, [stage]);
 
   const currentQuest = typeof stage === "number" ? QUESTS[stage] : null;
 
@@ -131,23 +194,34 @@ export default function HearingPage() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, []);
 
+  const jumpTo = useCallback((i: number) => {
+    setStage(i);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, []);
+
   const reset = () => {
     if (!confirm("回答をリセットして最初からやり直しますか？")) return;
     setAnswers({});
     setStage(0);
+    setMaxReached(0);
+    setLoadedFromLink(false);
+    if (window.location.hash) {
+      history.replaceState(null, "", window.location.pathname);
+    }
   };
 
   const updateField = (key: string, value: string | string[]) => {
     setAnswers((prev) => ({ ...prev, [key]: value }));
   };
 
-  // ── Press Enter to advance (except inside a textarea) ──
+  // ── Press Enter to advance (except inside a textarea / on links & buttons) ──
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key !== "Enter" || e.shiftKey) return;
       if (stage === "result") return;
       const t = e.target as HTMLElement | null;
-      if (t && (t.tagName === "TEXTAREA" || t.tagName === "BUTTON")) return;
+      if (t && (t.tagName === "TEXTAREA" || t.tagName === "BUTTON" || t.tagName === "A"))
+        return;
       if (canProceed) {
         e.preventDefault();
         goNext();
@@ -170,13 +244,15 @@ export default function HearingPage() {
               className="inline-flex items-center gap-1.5 text-sm text-ink-500 transition hover:text-ink-700"
             >
               <ArrowLeft className="h-4 w-4" />
-              Brief
+              {siteConfig.brand.name}
             </Link>
             <div className="flex items-center gap-4">
-              <span className="hidden items-center gap-1.5 text-xs text-ink-400 sm:inline-flex">
-                <span className="h-1.5 w-1.5 rounded-full bg-ink-300" />
-                自動保存中
-              </span>
+              {!loadedFromLink && (
+                <span className="hidden items-center gap-1.5 text-xs text-ink-400 sm:inline-flex">
+                  <span className="h-1.5 w-1.5 rounded-full bg-ink-300" />
+                  自動保存中
+                </span>
+              )}
               <button
                 onClick={reset}
                 className="inline-flex items-center gap-1.5 text-xs text-ink-400 transition hover:text-ink-700"
@@ -196,19 +272,40 @@ export default function HearingPage() {
               </span>
               <span className="font-semibold text-ink-700">{progress}%</span>
             </div>
+
+            {/* Segmented stepper — also navigation */}
             <div
-              className="mt-2 h-1 w-full overflow-hidden rounded-full bg-ink-150"
+              className="mt-2 flex items-center gap-1"
               role="progressbar"
               aria-valuenow={progress}
               aria-valuemin={0}
               aria-valuemax={100}
             >
-              <motion.div
-                className="h-full bg-ink-700"
-                initial={false}
-                animate={{ width: `${progress}%` }}
-                transition={{ duration: 0.5, ease }}
-              />
+              {QUESTS.map((q, i) => {
+                const complete = isQuestComplete(q, answers);
+                const isCurrent = stage === i;
+                const reached = i <= maxReached || stage === "result";
+                const color = isCurrent
+                  ? "bg-ink-700"
+                  : complete
+                    ? "bg-ink-700"
+                    : reached
+                      ? "bg-ink-300 hover:bg-ink-400"
+                      : "bg-ink-150";
+                return (
+                  <button
+                    key={q.id}
+                    type="button"
+                    onClick={() => reached && jumpTo(i)}
+                    disabled={!reached}
+                    aria-label={`Section ${i + 1}：${q.title}`}
+                    aria-current={isCurrent ? "step" : undefined}
+                    className={`h-1.5 flex-1 rounded-full transition-colors ${color} ${
+                      reached ? "cursor-pointer" : "cursor-not-allowed"
+                    }`}
+                  />
+                );
+              })}
             </div>
           </div>
         </div>
@@ -221,6 +318,7 @@ export default function HearingPage() {
             <ResultView
               key="result"
               answers={answers}
+              loadedFromLink={loadedFromLink}
               onBack={goBack}
               onReset={reset}
             />
@@ -274,11 +372,7 @@ export default function HearingPage() {
               className="hidden flex-1 text-center text-xs text-ink-400 sm:block"
               aria-live="polite"
             >
-              {canProceed
-                ? isLast
-                  ? "Enter で完了"
-                  : "Enter で次へ"
-                : reason}
+              {canProceed ? (isLast ? "Enter で完了" : "Enter で次へ") : reason}
             </span>
 
             <button
@@ -434,7 +528,11 @@ function FieldRenderer({
     return (
       <div>
         {labelBlock}
-        <div role="group" aria-label={field.label} className="flex flex-wrap gap-2">
+        <div
+          role="group"
+          aria-label={field.label}
+          className="flex flex-wrap gap-2"
+        >
           {field.options?.map((opt) => {
             const active = current.includes(opt.value);
             return (
@@ -563,22 +661,56 @@ function pickReadableTextColor(hex: string): string {
 
 function ResultView({
   answers,
+  loadedFromLink,
   onBack,
   onReset,
 }: {
   answers: Answers;
+  loadedFromLink: boolean;
   onBack: () => void;
   onReset: () => void;
 }) {
   const [copied, setCopied] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
 
   const summaryText = useMemo(() => buildSummaryText(answers), [answers]);
 
-  const copy = async () => {
+  const shareLink = useMemo(() => {
+    if (typeof window === "undefined") return "";
+    const base = process.env.NEXT_PUBLIC_BASE_PATH || "";
+    const enc = encodeAnswers(answers);
+    return enc
+      ? `${window.location.origin}${base}/hearing/#r=${enc}`
+      : "";
+  }, [answers]);
+
+  const mailto = useMemo(() => {
+    const company = (answers["companyName"] as string) || "";
+    const subject = `【HP制作ヒアリング】${company || "新規ご相談"}`;
+    const body =
+      summaryText +
+      (shareLink ? `\n\n----\n▼ 回答を再表示できるリンク\n${shareLink}\n` : "");
+    return `mailto:${siteConfig.contact.email}?subject=${encodeURIComponent(
+      subject,
+    )}&body=${encodeURIComponent(body)}`;
+  }, [answers, summaryText, shareLink]);
+
+  const copyText = async () => {
     try {
       await navigator.clipboard.writeText(summaryText);
       setCopied(true);
       setTimeout(() => setCopied(false), 1600);
+    } catch {
+      /* ignore */
+    }
+  };
+
+  const copyLink = async () => {
+    if (!shareLink) return;
+    try {
+      await navigator.clipboard.writeText(shareLink);
+      setLinkCopied(true);
+      setTimeout(() => setLinkCopied(false), 1600);
     } catch {
       /* ignore */
     }
@@ -597,14 +729,41 @@ function ResultView({
       <div className="text-center print:hidden">
         <Sparkles className="mx-auto h-6 w-6 text-ink-500" />
         <h2 className="mt-4 font-display text-4xl font-semibold tracking-tight text-ink-700 sm:text-5xl">
-          完了しました。
+          {loadedFromLink ? "ヒアリング内容" : "入力ありがとうございました。"}
         </h2>
-        <p className="mt-3 text-base text-ink-500">
-          内容を以下にまとめました。提案書の下書きにそのままお使いください。
+        <p className="mx-auto mt-3 max-w-xl text-base text-ink-500">
+          {loadedFromLink
+            ? "共有されたヒアリング内容です。"
+            : "下記の内容で送信してください。担当者が確認のうえご連絡します。"}
         </p>
 
+        {!loadedFromLink && (
+          <div className="mt-8">
+            <a href={mailto} className="btn-primary px-8 py-3.5 text-base">
+              <Send className="h-4 w-4" />
+              この内容を送信する
+            </a>
+            <p className="mt-3 text-xs text-ink-400">
+              メールソフトが開きます。本文はそのまま送信してください。
+            </p>
+          </div>
+        )}
+
         <div className="mt-8 flex flex-wrap items-center justify-center gap-2">
-          <button onClick={copy} className="btn-primary">
+          {shareLink && (
+            <button onClick={copyLink} className="btn-ghost">
+              {linkCopied ? (
+                <>
+                  <Check className="h-4 w-4" /> コピー済み
+                </>
+              ) : (
+                <>
+                  <Link2 className="h-4 w-4" /> 回答リンクをコピー
+                </>
+              )}
+            </button>
+          )}
+          <button onClick={copyText} className="btn-ghost">
             {copied ? (
               <>
                 <Check className="h-4 w-4" /> コピー済み
@@ -665,7 +824,7 @@ function ResultView({
       {/* Bottom */}
       <div className="flex justify-between print:hidden">
         <button onClick={onBack} className="btn-ghost">
-          <ArrowLeft className="h-4 w-4" /> 前へ戻る
+          <ArrowLeft className="h-4 w-4" /> 内容を修正する
         </button>
         <Link href="/" className="btn-primary">
           トップへ
