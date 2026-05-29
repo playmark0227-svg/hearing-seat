@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   ArrowLeft,
@@ -15,7 +15,6 @@ import {
 import {
   QUESTS,
   isFieldFilled,
-  isQuestComplete,
   type Answers,
   type Field,
 } from "./quests";
@@ -26,6 +25,25 @@ const STAGE_KEY = "brief.stage.v1";
 type Stage = number | "result";
 
 const ease = [0.16, 1, 0.3, 1] as const;
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+function isEmailValid(v: string): boolean {
+  return EMAIL_RE.test(v.trim());
+}
+
+/** A field is "blocking" if required-but-empty, or an email with an invalid value. */
+function fieldBlocked(field: Field, value: unknown): boolean {
+  if (field.required && !isFieldFilled(field, value)) return true;
+  if (
+    field.type === "email" &&
+    typeof value === "string" &&
+    value.trim().length > 0 &&
+    !isEmailValid(value)
+  ) {
+    return true;
+  }
+  return false;
+}
 
 export default function HearingPage() {
   const [answers, setAnswers] = useState<Answers>({});
@@ -41,9 +59,7 @@ export default function HearingPage() {
         const parsed = JSON.parse(s) as Stage;
         if (
           parsed === "result" ||
-          (typeof parsed === "number" &&
-            parsed >= 0 &&
-            parsed < QUESTS.length)
+          (typeof parsed === "number" && parsed >= 0 && parsed < QUESTS.length)
         ) {
           setStage(parsed);
         }
@@ -65,34 +81,55 @@ export default function HearingPage() {
   }, [stage, hydrated]);
 
   const currentQuest = typeof stage === "number" ? QUESTS[stage] : null;
-  const progress =
-    stage === "result"
-      ? 100
-      : Math.round(((stage as number) / QUESTS.length) * 100);
 
-  const canProceed = useMemo(() => {
-    if (!currentQuest) return true;
-    return isQuestComplete(currentQuest, answers);
+  // ── Progress: section index + intra-section completion ratio ──
+  const progress = useMemo(() => {
+    if (stage === "result") return 100;
+    const q = QUESTS[stage as number];
+    const required = q.fields.filter((f) => f.required);
+    const filled = required.filter((f) => isFieldFilled(f, answers[f.key]));
+    const ratio = required.length ? filled.length / required.length : 1;
+    return Math.min(
+      100,
+      Math.round((((stage as number) + ratio) / QUESTS.length) * 100),
+    );
+  }, [stage, answers]);
+
+  // ── Can we advance? + human reason ──
+  const { canProceed, reason } = useMemo(() => {
+    if (!currentQuest) return { canProceed: true, reason: "" };
+    const missingRequired = currentQuest.fields.some(
+      (f) => f.required && !isFieldFilled(f, answers[f.key]),
+    );
+    if (missingRequired)
+      return { canProceed: false, reason: "必須項目を入力してください" };
+    const badEmail = currentQuest.fields.some((f) =>
+      fieldBlocked(f, answers[f.key]),
+    );
+    if (badEmail)
+      return {
+        canProceed: false,
+        reason: "メールアドレスの形式をご確認ください",
+      };
+    return { canProceed: true, reason: "" };
   }, [currentQuest, answers]);
 
-  const goNext = () => {
-    if (typeof stage !== "number") return;
-    if (stage < QUESTS.length - 1) {
-      setStage(stage + 1);
-    } else {
-      setStage("result");
-    }
+  const goNext = useCallback(() => {
+    setStage((s) => {
+      if (typeof s !== "number") return s;
+      return s < QUESTS.length - 1 ? s + 1 : "result";
+    });
     window.scrollTo({ top: 0, behavior: "smooth" });
-  };
+  }, []);
 
-  const goBack = () => {
-    if (stage === "result") {
-      setStage(QUESTS.length - 1);
-    } else if (typeof stage === "number" && stage > 0) {
-      setStage(stage - 1);
-    }
+  const goBack = useCallback(() => {
+    setStage((s) => {
+      if (s === "result") return QUESTS.length - 1;
+      if (typeof s === "number" && s > 0) return s - 1;
+      return s;
+    });
     window.scrollTo({ top: 0, behavior: "smooth" });
-  };
+  }, []);
 
   const reset = () => {
     if (!confirm("回答をリセットして最初からやり直しますか？")) return;
@@ -103,6 +140,24 @@ export default function HearingPage() {
   const updateField = (key: string, value: string | string[]) => {
     setAnswers((prev) => ({ ...prev, [key]: value }));
   };
+
+  // ── Press Enter to advance (except inside a textarea) ──
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key !== "Enter" || e.shiftKey) return;
+      if (stage === "result") return;
+      const t = e.target as HTMLElement | null;
+      if (t && (t.tagName === "TEXTAREA" || t.tagName === "BUTTON")) return;
+      if (canProceed) {
+        e.preventDefault();
+        goNext();
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [stage, canProceed, goNext]);
+
+  const isLast = stage === QUESTS.length - 1;
 
   return (
     <main className="min-h-screen bg-white text-ink-700">
@@ -117,13 +172,19 @@ export default function HearingPage() {
               <ArrowLeft className="h-4 w-4" />
               Brief
             </Link>
-            <button
-              onClick={reset}
-              className="inline-flex items-center gap-1.5 text-xs text-ink-400 transition hover:text-ink-700"
-            >
-              <RotateCcw className="h-3.5 w-3.5" />
-              リセット
-            </button>
+            <div className="flex items-center gap-4">
+              <span className="hidden items-center gap-1.5 text-xs text-ink-400 sm:inline-flex">
+                <span className="h-1.5 w-1.5 rounded-full bg-ink-300" />
+                自動保存中
+              </span>
+              <button
+                onClick={reset}
+                className="inline-flex items-center gap-1.5 text-xs text-ink-400 transition hover:text-ink-700"
+              >
+                <RotateCcw className="h-3.5 w-3.5" />
+                リセット
+              </button>
+            </div>
           </div>
 
           <div className="mt-3 pb-3">
@@ -135,12 +196,18 @@ export default function HearingPage() {
               </span>
               <span className="font-semibold text-ink-700">{progress}%</span>
             </div>
-            <div className="mt-2 h-1 w-full overflow-hidden rounded-full bg-ink-150">
+            <div
+              className="mt-2 h-1 w-full overflow-hidden rounded-full bg-ink-150"
+              role="progressbar"
+              aria-valuenow={progress}
+              aria-valuemin={0}
+              aria-valuemax={100}
+            >
               <motion.div
                 className="h-full bg-ink-700"
                 initial={false}
                 animate={{ width: `${progress}%` }}
-                transition={{ duration: 0.6, ease }}
+                transition={{ duration: 0.5, ease }}
               />
             </div>
           </div>
@@ -193,7 +260,7 @@ export default function HearingPage() {
       {/* ─── Sticky nav ─── */}
       {stage !== "result" && (
         <div className="fixed inset-x-0 bottom-0 z-20 border-t border-ink-100 bg-white/90 backdrop-blur-xl">
-          <div className="mx-auto flex max-w-3xl items-center justify-between px-5 py-4">
+          <div className="mx-auto flex max-w-3xl items-center justify-between gap-3 px-5 py-4">
             <button
               onClick={goBack}
               disabled={stage === 0}
@@ -203,12 +270,23 @@ export default function HearingPage() {
               戻る
             </button>
 
+            <span
+              className="hidden flex-1 text-center text-xs text-ink-400 sm:block"
+              aria-live="polite"
+            >
+              {canProceed
+                ? isLast
+                  ? "Enter で完了"
+                  : "Enter で次へ"
+                : reason}
+            </span>
+
             <button
               onClick={goNext}
               disabled={!canProceed}
               className="btn-primary disabled:cursor-not-allowed disabled:opacity-30"
             >
-              {stage === QUESTS.length - 1 ? "完了する" : "次へ"}
+              {isLast ? "完了する" : "次へ"}
               <ArrowRight className="h-4 w-4" />
             </button>
           </div>
@@ -230,11 +308,21 @@ function FieldRenderer({
   onChange: (v: string | string[]) => void;
 }) {
   const filled = isFieldFilled(field, value);
+  const fieldId = `f-${field.key}`;
+  const selectedCount = Array.isArray(value) ? value.length : 0;
+  const emailInvalid =
+    field.type === "email" &&
+    typeof value === "string" &&
+    value.trim().length > 0 &&
+    !isEmailValid(value);
 
   const labelBlock = (
     <div className="mb-4 flex items-start justify-between gap-3">
       <div>
-        <label className="text-base font-semibold tracking-tight text-ink-700">
+        <label
+          htmlFor={fieldId}
+          className="text-base font-semibold tracking-tight text-ink-700"
+        >
           {field.label}
           {field.required && (
             <span className="ml-1.5 text-xs font-medium text-accent">必須</span>
@@ -244,11 +332,19 @@ function FieldRenderer({
           <p className="mt-1 text-sm text-ink-500">{field.description}</p>
         )}
       </div>
-      {filled && (
-        <span className="mt-1 inline-flex flex-shrink-0 items-center gap-1 rounded-full bg-ink-700 px-2.5 py-0.5 text-[10px] font-semibold text-white">
-          <Check className="h-3 w-3" />
-        </span>
-      )}
+      <div className="flex flex-shrink-0 items-center gap-2">
+        {(field.type === "multi" || field.type === "cardGrid") &&
+          selectedCount > 0 && (
+            <span className="text-xs font-medium text-ink-400">
+              {selectedCount}件選択中
+            </span>
+          )}
+        {filled && !emailInvalid && (
+          <span className="mt-0.5 inline-flex items-center gap-1 rounded-full bg-ink-700 px-2.5 py-0.5 text-[10px] font-semibold text-white">
+            <Check className="h-3 w-3" />
+          </span>
+        )}
+      </div>
     </div>
   );
 
@@ -257,12 +353,23 @@ function FieldRenderer({
       <div>
         {labelBlock}
         <input
+          id={fieldId}
           type={field.type}
+          inputMode={field.type === "email" ? "email" : undefined}
+          autoComplete={field.type === "email" ? "email" : undefined}
           value={(value as string) ?? ""}
           onChange={(e) => onChange(e.target.value)}
           placeholder={field.placeholder}
-          className="input-clean"
+          aria-invalid={emailInvalid || undefined}
+          className={`input-clean ${
+            emailInvalid ? "border-accent focus:border-accent" : ""
+          }`}
         />
+        {emailInvalid && (
+          <p className="mt-2 text-xs text-accent">
+            メールアドレスの形式をご確認ください
+          </p>
+        )}
       </div>
     );
   }
@@ -272,6 +379,7 @@ function FieldRenderer({
       <div>
         {labelBlock}
         <textarea
+          id={fieldId}
           value={(value as string) ?? ""}
           onChange={(e) => onChange(e.target.value)}
           placeholder={field.placeholder}
@@ -287,18 +395,22 @@ function FieldRenderer({
     return (
       <div>
         {labelBlock}
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+        <div
+          role="radiogroup"
+          aria-label={field.label}
+          className="grid grid-cols-2 gap-2 sm:grid-cols-3"
+        >
           {field.options?.map((opt) => {
             const active = current === opt.value;
             return (
               <button
                 key={opt.value}
                 type="button"
+                role="radio"
+                aria-checked={active}
                 onClick={() => onChange(opt.value)}
-                className={`relative flex items-center gap-2 rounded-2xl border px-3 py-3 text-left text-sm transition ${
-                  active
-                    ? "border-ink-700 bg-ink-700 text-white"
-                    : "border-ink-200 bg-white text-ink-700 hover:border-ink-400 hover:bg-ink-50"
+                className={`opt flex items-center gap-2 rounded-2xl border px-3 py-3 text-left text-sm ${
+                  active ? "opt-active" : "opt-idle"
                 }`}
               >
                 {opt.emoji && (
@@ -322,18 +434,17 @@ function FieldRenderer({
     return (
       <div>
         {labelBlock}
-        <div className="flex flex-wrap gap-2">
+        <div role="group" aria-label={field.label} className="flex flex-wrap gap-2">
           {field.options?.map((opt) => {
             const active = current.includes(opt.value);
             return (
               <button
                 key={opt.value}
                 type="button"
+                aria-pressed={active}
                 onClick={() => toggle(opt.value)}
-                className={`inline-flex items-center gap-1.5 rounded-full border px-4 py-2 text-sm transition ${
-                  active
-                    ? "border-ink-700 bg-ink-700 text-white"
-                    : "border-ink-200 bg-white text-ink-700 hover:border-ink-400 hover:bg-ink-50"
+                className={`opt inline-flex items-center gap-1.5 rounded-full border px-4 py-2 text-sm ${
+                  active ? "opt-active" : "opt-idle"
                 }`}
               >
                 {opt.emoji && <span>{opt.emoji}</span>}
@@ -356,18 +467,21 @@ function FieldRenderer({
     return (
       <div>
         {labelBlock}
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+        <div
+          role="group"
+          aria-label={field.label}
+          className="grid grid-cols-2 gap-2 sm:grid-cols-3"
+        >
           {field.options?.map((opt) => {
             const active = current.includes(opt.value);
             return (
               <button
                 key={opt.value}
                 type="button"
+                aria-pressed={active}
                 onClick={() => toggle(opt.value)}
-                className={`flex aspect-[5/4] flex-col items-center justify-center gap-2 rounded-2xl border p-4 transition ${
-                  active
-                    ? "border-ink-700 bg-ink-700 text-white"
-                    : "border-ink-200 bg-white text-ink-700 hover:border-ink-400 hover:bg-ink-50"
+                className={`opt flex aspect-[5/4] flex-col items-center justify-center gap-2 rounded-2xl border p-4 ${
+                  active ? "opt-active" : "opt-idle"
                 }`}
               >
                 <span className="text-2xl">{opt.emoji}</span>
@@ -385,18 +499,25 @@ function FieldRenderer({
     return (
       <div>
         {labelBlock}
-        <div className="grid grid-cols-5 gap-3 sm:grid-cols-10">
+        <div
+          role="radiogroup"
+          aria-label={field.label}
+          className="grid grid-cols-5 gap-3 sm:grid-cols-10"
+        >
           {field.options?.map((opt) => {
             const active = current === opt.value;
             return (
               <button
                 key={opt.value}
                 type="button"
-                onClick={() => onChange(opt.value)}
+                role="radio"
+                aria-checked={active}
+                aria-label={opt.label}
                 title={opt.label}
-                className={`group relative aspect-square w-full rounded-2xl border transition ${
+                onClick={() => onChange(opt.value)}
+                className={`opt aspect-square w-full rounded-2xl border ${
                   active
-                    ? "border-ink-700 shadow-soft"
+                    ? "border-ink-700 shadow-soft ring-2 ring-ink-700/20"
                     : "border-ink-200 hover:border-ink-400"
                 }`}
                 style={{ backgroundColor: opt.value }}

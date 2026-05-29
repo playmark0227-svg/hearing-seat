@@ -10,6 +10,13 @@
   --font-display:
     -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue",
     "Hiragino Sans", "Noto Sans JP", system-ui, sans-serif;
+  --header-h: 64px;
+}
+
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: calc(var(--header-h) + 16px);
+  -webkit-text-size-adjust: 100%;
 }
 
 html,
@@ -21,6 +28,7 @@ body {
   -moz-osx-font-smoothing: grayscale;
   color: #1d1d1f;
   background: #ffffff;
+  text-rendering: optimizeLegibility;
 }
 
 * {
@@ -30,6 +38,13 @@ body {
 ::selection {
   background: #1d1d1f;
   color: #fff;
+}
+
+/* Visible focus only for keyboard users */
+:focus-visible {
+  outline: 2px solid #1d1d1f;
+  outline-offset: 2px;
+  border-radius: 4px;
 }
 
 @layer components {
@@ -55,7 +70,17 @@ body {
     @apply text-xs font-semibold uppercase tracking-[0.18em] text-ink-500;
   }
   .input-clean {
-    @apply w-full rounded-2xl border border-ink-200 bg-white px-4 py-3 text-sm text-ink-700 placeholder:text-ink-400 outline-none transition focus:border-ink-700 focus:ring-2 focus:ring-ink-700/10;
+    @apply w-full rounded-2xl border border-ink-200 bg-white px-4 py-3 text-base text-ink-700 placeholder:text-ink-400 outline-none transition focus:border-ink-700 focus:ring-2 focus:ring-ink-700/10;
+  }
+  /* Selectable option (single / multi / card) */
+  .opt {
+    @apply relative transition outline-none focus-visible:ring-2 focus-visible:ring-ink-700/30 focus-visible:ring-offset-2;
+  }
+  .opt-idle {
+    @apply border-ink-200 bg-white text-ink-700 hover:border-ink-400 hover:bg-ink-50;
+  }
+  .opt-active {
+    @apply border-ink-700 bg-ink-700 text-white;
   }
 }
 
@@ -70,9 +95,39 @@ body {
   border-radius: 8px;
 }
 
+/* Smooth CSS-only accordion */
+.accordion {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.accordion[data-open="true"] {
+  grid-template-rows: 1fr;
+}
+.accordion > .accordion-inner {
+  overflow: hidden;
+}
+
+/* Respect reduced-motion preference */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
 @media print {
   body {
     background: #fff !important;
     color: #000 !important;
+  }
+  .print\:hidden {
+    display: none !important;
   }
 }

@@ -1,14 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState, type ReactNode } from "react";
 import { motion } from "framer-motion";
 import {
   ArrowRight,
   ArrowUpRight,
   Check,
   ChevronDown,
-  ClipboardList,
   Copy,
   Link as LinkIcon,
   Mail,
@@ -17,6 +16,29 @@ import {
 import { siteConfig } from "./site-config";
 
 const ease = [0.16, 1, 0.3, 1] as const;
+
+/* Scroll-triggered reveal wrapper */
+function Reveal({
+  children,
+  delay = 0,
+  className,
+}: {
+  children: ReactNode;
+  delay?: number;
+  className?: string;
+}) {
+  return (
+    <motion.div
+      className={className}
+      initial={{ opacity: 0, y: 24 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-80px" }}
+      transition={{ duration: 0.7, ease, delay }}
+    >
+      {children}
+    </motion.div>
+  );
+}
 
 export default function LandingPage() {
   const [shareUrl, setShareUrl] = useState("");
@@ -43,13 +65,14 @@ export default function LandingPage() {
 
   const { brand, hero, values, services, process: steps, faq, contact } =
     siteConfig;
+  const faqId = useId();
 
   return (
     <main className="min-h-screen bg-white text-ink-700">
       {/* ─────── Header ─────── */}
       <header className="sticky top-0 z-40 border-b border-ink-100/80 bg-white/80 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-          <Link href="/" className="flex items-center gap-2">
+        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
+          <Link href="/" className="flex items-center gap-2" aria-label={brand.name}>
             <span className="grid h-7 w-7 place-items-center rounded-lg bg-ink-700 text-[11px] font-bold text-white">
               {brand.initial}
             </span>
@@ -147,202 +170,235 @@ export default function LandingPage() {
             className="relative"
           >
             <div className="absolute inset-x-12 top-8 -z-10 h-64 rounded-[3rem] bg-gradient-to-br from-accent-soft via-ink-100 to-white blur-3xl" />
-            <ProductPreview />
+            <div className="animate-float">
+              <ProductPreview />
+            </div>
           </motion.div>
         </div>
       </section>
 
       {/* ─────── Values ─────── */}
-      <section id="values" className="bg-ink-100 px-6 pb-24 pt-44">
+      <section id="values" className="scroll-mt-20 bg-ink-100 px-6 pb-24 pt-44">
         <div className="mx-auto max-w-5xl">
-          <p className="eyebrow text-center">Why us</p>
-          <h2 className="mt-4 text-center font-display text-3xl font-semibold leading-tight tracking-tight text-ink-700 sm:text-5xl">
-            私たちが、大切にしていること。
-          </h2>
+          <Reveal>
+            <p className="eyebrow text-center">Why us</p>
+            <h2 className="mt-4 text-center font-display text-3xl font-semibold leading-tight tracking-tight text-ink-700 sm:text-5xl">
+              私たちが、大切にしていること。
+            </h2>
+          </Reveal>
 
           <div className="mt-16 grid gap-px overflow-hidden rounded-3xl bg-ink-200 sm:grid-cols-3">
-            {values.map((v) => (
-              <div key={v.n} className="bg-white p-8 sm:p-10">
-                <div className="text-xs font-semibold tracking-widest text-accent">
-                  {v.n}
+            {values.map((v, i) => (
+              <Reveal key={v.n} delay={i * 0.08} className="bg-white">
+                <div className="h-full p-8 sm:p-10">
+                  <div className="text-xs font-semibold tracking-widest text-accent">
+                    {v.n}
+                  </div>
+                  <h3 className="mt-4 text-xl font-semibold tracking-tight text-ink-700">
+                    {v.title}
+                  </h3>
+                  <p className="mt-3 text-sm leading-relaxed text-ink-500">
+                    {v.desc}
+                  </p>
                 </div>
-                <h3 className="mt-4 text-xl font-semibold tracking-tight text-ink-700">
-                  {v.title}
-                </h3>
-                <p className="mt-3 text-sm leading-relaxed text-ink-500">
-                  {v.desc}
-                </p>
-              </div>
+              </Reveal>
             ))}
           </div>
         </div>
       </section>
 
       {/* ─────── Services ─────── */}
-      <section id="services" className="px-6 py-32">
+      <section id="services" className="scroll-mt-20 px-6 py-32">
         <div className="mx-auto max-w-5xl">
-          <p className="eyebrow">Services</p>
-          <h2 className="mt-4 max-w-3xl font-display text-4xl font-semibold leading-[1.1] tracking-tight text-ink-700 sm:text-6xl">
-            提供しているサービス。
-          </h2>
-          <p className="mt-6 max-w-2xl text-lg text-ink-500">
-            HP制作を軸に、コンセプト設計から公開後の運用までを一貫してサポートします。
-          </p>
+          <Reveal>
+            <p className="eyebrow">Services</p>
+            <h2 className="mt-4 max-w-3xl font-display text-4xl font-semibold leading-[1.1] tracking-tight text-ink-700 sm:text-6xl">
+              提供しているサービス。
+            </h2>
+            <p className="mt-6 max-w-2xl text-lg text-ink-500">
+              HP制作を軸に、コンセプト設計から公開後の運用までを一貫してサポートします。
+            </p>
+          </Reveal>
 
           <div className="mt-16 grid gap-4 sm:grid-cols-2">
-            {services.map((s) => (
-              <div
-                key={s.n}
-                className="group rounded-3xl border border-ink-150 bg-white p-8 transition hover:border-ink-300 hover:shadow-soft"
-              >
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold tracking-widest text-ink-400">
-                    {s.n}
-                  </span>
-                  <ArrowUpRight className="h-4 w-4 text-ink-300 transition group-hover:text-ink-700" />
+            {services.map((s, i) => (
+              <Reveal key={s.n} delay={i * 0.06}>
+                <div className="group h-full rounded-3xl border border-ink-150 bg-white p-8 transition hover:border-ink-300 hover:shadow-soft">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold tracking-widest text-ink-400">
+                      {s.n}
+                    </span>
+                    <ArrowUpRight className="h-4 w-4 text-ink-300 transition group-hover:text-ink-700" />
+                  </div>
+                  <h3 className="mt-6 text-2xl font-semibold tracking-tight text-ink-700">
+                    {s.title}
+                  </h3>
+                  <p className="mt-2 text-sm leading-relaxed text-ink-500">
+                    {s.desc}
+                  </p>
                 </div>
-                <h3 className="mt-6 text-2xl font-semibold tracking-tight text-ink-700">
-                  {s.title}
-                </h3>
-                <p className="mt-2 text-sm leading-relaxed text-ink-500">
-                  {s.desc}
-                </p>
-              </div>
+              </Reveal>
             ))}
           </div>
         </div>
       </section>
 
       {/* ─────── Process ─────── */}
-      <section id="process" className="bg-ink-100 px-6 py-32">
+      <section id="process" className="scroll-mt-20 bg-ink-100 px-6 py-32">
         <div className="mx-auto max-w-5xl">
-          <p className="eyebrow">Process</p>
-          <h2 className="mt-4 font-display text-4xl font-semibold leading-tight tracking-tight text-ink-700 sm:text-6xl">
-            制作の流れ。
-          </h2>
-          <p className="mt-6 max-w-2xl text-lg text-ink-500">
-            すべての始まりは、ヒアリングから。
-          </p>
+          <Reveal>
+            <p className="eyebrow">Process</p>
+            <h2 className="mt-4 font-display text-4xl font-semibold leading-tight tracking-tight text-ink-700 sm:text-6xl">
+              制作の流れ。
+            </h2>
+            <p className="mt-6 max-w-2xl text-lg text-ink-500">
+              すべての始まりは、ヒアリングから。
+            </p>
+          </Reveal>
 
           <ol className="mt-16 space-y-3">
-            {steps.map((s) => (
-              <li
-                key={s.step}
-                className={`group relative rounded-3xl border bg-white p-6 transition hover:shadow-soft sm:p-8 ${
-                  s.isHearing
-                    ? "border-ink-700 ring-2 ring-ink-700/10"
-                    : "border-ink-150"
-                }`}
-              >
-                <div className="grid items-start gap-4 sm:grid-cols-[8rem_1fr_auto]">
-                  <div className="text-xs font-semibold tracking-widest text-ink-400">
-                    STEP {s.step}
+            {steps.map((s, i) => (
+              <Reveal key={s.step} delay={i * 0.05}>
+                <li
+                  className={`relative rounded-3xl border bg-white p-6 transition hover:shadow-soft sm:p-8 ${
+                    s.isHearing
+                      ? "border-ink-700 ring-2 ring-ink-700/10"
+                      : "border-ink-150"
+                  }`}
+                >
+                  <div className="grid items-start gap-4 sm:grid-cols-[8rem_1fr_auto]">
+                    <div className="text-xs font-semibold tracking-widest text-ink-400">
+                      STEP {s.step}
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-semibold tracking-tight text-ink-700">
+                        {s.title}
+                        {s.isHearing && (
+                          <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-ink-700 px-2 py-0.5 align-middle text-[10px] font-semibold text-white">
+                            ここから
+                          </span>
+                        )}
+                      </h3>
+                      <p className="mt-1.5 text-sm text-ink-500">{s.desc}</p>
+                    </div>
+                    {s.isHearing && (
+                      <Link
+                        href="/hearing"
+                        className="inline-flex items-center justify-center gap-1.5 self-center rounded-full bg-ink-700 px-4 py-2 text-xs font-medium text-white transition hover:bg-ink-800"
+                      >
+                        開始する
+                        <ArrowRight className="h-3.5 w-3.5" />
+                      </Link>
+                    )}
                   </div>
-                  <div>
-                    <h3 className="text-xl font-semibold tracking-tight text-ink-700">
-                      {s.title}
-                      {s.isHearing && (
-                        <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-ink-700 px-2 py-0.5 align-middle text-[10px] font-semibold text-white">
-                          ここから
-                        </span>
-                      )}
-                    </h3>
-                    <p className="mt-1.5 text-sm text-ink-500">{s.desc}</p>
-                  </div>
-                  {s.isHearing && (
-                    <Link
-                      href="/hearing"
-                      className="inline-flex items-center justify-center gap-1.5 self-center rounded-full bg-ink-700 px-4 py-2 text-xs font-medium text-white transition hover:bg-ink-800"
-                    >
-                      開始する
-                      <ArrowRight className="h-3.5 w-3.5" />
-                    </Link>
-                  )}
-                </div>
-              </li>
+                </li>
+              </Reveal>
             ))}
           </ol>
         </div>
       </section>
 
       {/* ─────── Hearing direct link ─────── */}
-      <section id="share" className="px-6 py-32">
+      <section id="share" className="scroll-mt-20 px-6 py-32">
         <div className="mx-auto max-w-3xl text-center">
-          <p className="eyebrow">Start here</p>
-          <h2 className="mt-4 font-display text-4xl font-semibold leading-tight tracking-tight text-ink-700 sm:text-6xl">
-            まずは、5分のヒアリングから。
-          </h2>
-          <p className="mt-6 text-lg text-ink-500">
-            ご担当者へのご共有も、このURLを送るだけで完結します。
-          </p>
+          <Reveal>
+            <p className="eyebrow">Start here</p>
+            <h2 className="mt-4 font-display text-4xl font-semibold leading-tight tracking-tight text-ink-700 sm:text-6xl">
+              まずは、5分のヒアリングから。
+            </h2>
+            <p className="mt-6 text-lg text-ink-500">
+              ご担当者へのご共有も、このURLを送るだけで完結します。
+            </p>
+          </Reveal>
 
-          <div className="mx-auto mt-10 flex max-w-2xl flex-col items-stretch gap-2 rounded-2xl border border-ink-200 bg-white p-2 shadow-soft sm:flex-row">
-            <div className="flex flex-1 items-center gap-3 rounded-xl bg-ink-100 px-4 py-3">
-              <LinkIcon className="h-4 w-4 flex-shrink-0 text-ink-500" />
-              <span className="truncate text-left text-sm text-ink-700">
-                {shareUrl || "読み込み中…"}
-              </span>
+          <Reveal delay={0.1}>
+            <div className="mx-auto mt-10 flex max-w-2xl flex-col items-stretch gap-2 rounded-2xl border border-ink-200 bg-white p-2 shadow-soft sm:flex-row">
+              <div className="flex flex-1 items-center gap-3 rounded-xl bg-ink-100 px-4 py-3">
+                <LinkIcon className="h-4 w-4 flex-shrink-0 text-ink-500" />
+                <span className="truncate text-left text-sm text-ink-700">
+                  {shareUrl || "読み込み中…"}
+                </span>
+              </div>
+              <button
+                onClick={copy}
+                disabled={!shareUrl}
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-ink-700 px-5 py-3 text-sm font-medium text-white transition hover:bg-ink-800 disabled:opacity-40"
+              >
+                {copied ? (
+                  <>
+                    <Check className="h-4 w-4" /> コピー済み
+                  </>
+                ) : (
+                  <>
+                    <Copy className="h-4 w-4" /> リンクをコピー
+                  </>
+                )}
+              </button>
             </div>
-            <button
-              onClick={copy}
-              disabled={!shareUrl}
-              className="inline-flex items-center justify-center gap-2 rounded-xl bg-ink-700 px-5 py-3 text-sm font-medium text-white transition hover:bg-ink-800 disabled:opacity-40"
-            >
-              {copied ? (
-                <>
-                  <Check className="h-4 w-4" /> コピー済み
-                </>
-              ) : (
-                <>
-                  <Copy className="h-4 w-4" /> リンクをコピー
-                </>
-              )}
-            </button>
-          </div>
 
-          <div className="mt-6 flex justify-center">
-            <Link href="/hearing" className="btn-primary">
-              ヒアリングを開始する
-              <ArrowRight className="h-4 w-4" />
-            </Link>
-          </div>
+            <div className="mt-6 flex justify-center">
+              <Link href="/hearing" className="btn-primary">
+                ヒアリングを開始する
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+            </div>
+          </Reveal>
         </div>
       </section>
 
       {/* ─────── FAQ ─────── */}
-      <section id="faq" className="bg-ink-100 px-6 py-32">
+      <section id="faq" className="scroll-mt-20 bg-ink-100 px-6 py-32">
         <div className="mx-auto max-w-3xl">
-          <p className="eyebrow text-center">FAQ</p>
-          <h2 className="mt-4 text-center font-display text-4xl font-semibold leading-tight tracking-tight text-ink-700 sm:text-5xl">
-            よくあるご質問。
-          </h2>
+          <Reveal>
+            <p className="eyebrow text-center">FAQ</p>
+            <h2 className="mt-4 text-center font-display text-4xl font-semibold leading-tight tracking-tight text-ink-700 sm:text-5xl">
+              よくあるご質問。
+            </h2>
+          </Reveal>
 
           <div className="mt-12 space-y-2">
-            {faq.map((item, i) => (
-              <div
-                key={item.q}
-                className="overflow-hidden rounded-2xl border border-ink-150 bg-white"
-              >
-                <button
-                  onClick={() => setOpenFaq(openFaq === i ? null : i)}
-                  className="flex w-full items-center justify-between gap-4 px-6 py-5 text-left"
-                >
-                  <span className="text-sm font-semibold text-ink-700 sm:text-base">
-                    {item.q}
-                  </span>
-                  <ChevronDown
-                    className={`h-4 w-4 flex-shrink-0 text-ink-400 transition-transform ${
-                      openFaq === i ? "rotate-180" : ""
-                    }`}
-                  />
-                </button>
-                {openFaq === i && (
-                  <div className="border-t border-ink-100 px-6 py-5 text-sm leading-relaxed text-ink-600">
-                    {item.a}
+            {faq.map((item, i) => {
+              const open = openFaq === i;
+              const panelId = `${faqId}-panel-${i}`;
+              const btnId = `${faqId}-btn-${i}`;
+              return (
+                <Reveal key={item.q} delay={i * 0.04}>
+                  <div className="overflow-hidden rounded-2xl border border-ink-150 bg-white">
+                    <h3>
+                      <button
+                        id={btnId}
+                        aria-expanded={open}
+                        aria-controls={panelId}
+                        onClick={() => setOpenFaq(open ? null : i)}
+                        className="flex w-full items-center justify-between gap-4 px-6 py-5 text-left"
+                      >
+                        <span className="text-sm font-semibold text-ink-700 sm:text-base">
+                          {item.q}
+                        </span>
+                        <ChevronDown
+                          className={`h-4 w-4 flex-shrink-0 text-ink-400 transition-transform duration-300 ${
+                            open ? "rotate-180" : ""
+                          }`}
+                        />
+                      </button>
+                    </h3>
+                    <div
+                      id={panelId}
+                      role="region"
+                      aria-labelledby={btnId}
+                      className="accordion"
+                      data-open={open}
+                    >
+                      <div className="accordion-inner">
+                        <p className="border-t border-ink-100 px-6 py-5 text-sm leading-relaxed text-ink-600">
+                          {item.a}
+                        </p>
+                      </div>
+                    </div>
                   </div>
-                )}
-              </div>
-            ))}
+                </Reveal>
+              );
+            })}
           </div>
         </div>
       </section>
@@ -350,30 +406,32 @@ export default function LandingPage() {
       {/* ─────── Final CTA ─────── */}
       <section className="bg-ink-700 px-6 py-32 text-white">
         <div className="mx-auto max-w-4xl text-center">
-          <Sparkles className="mx-auto h-6 w-6 text-white/60" />
-          <h2 className="mt-6 font-display text-4xl font-semibold leading-tight tracking-tight sm:text-6xl">
-            想いを、聴かせてください。
-          </h2>
-          <p className="mx-auto mt-6 max-w-xl text-lg text-white/60">
-            HP制作のスタート地点で、お互いの認識をひとつに。
-          </p>
-          <div className="mt-10 flex flex-wrap items-center justify-center gap-3">
-            <Link
-              href="/hearing"
-              className="inline-flex items-center gap-2 rounded-full bg-white px-7 py-3.5 text-sm font-semibold text-ink-700 transition hover:bg-ink-100"
-            >
-              ヒアリングを始める
-              <ArrowRight className="h-4 w-4" />
-            </Link>
-            <a
-              href={`mailto:${contact.email}`}
-              className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/5 px-7 py-3.5 text-sm font-semibold text-white backdrop-blur transition hover:bg-white/10"
-            >
-              <Mail className="h-4 w-4" />
-              メールで連絡する
-            </a>
-          </div>
-          <p className="mt-6 text-xs text-white/40">{contact.note}</p>
+          <Reveal>
+            <Sparkles className="mx-auto h-6 w-6 text-white/60" />
+            <h2 className="mt-6 font-display text-4xl font-semibold leading-tight tracking-tight sm:text-6xl">
+              想いを、聴かせてください。
+            </h2>
+            <p className="mx-auto mt-6 max-w-xl text-lg text-white/60">
+              HP制作のスタート地点で、お互いの認識をひとつに。
+            </p>
+            <div className="mt-10 flex flex-wrap items-center justify-center gap-3">
+              <Link
+                href="/hearing"
+                className="inline-flex items-center gap-2 rounded-full bg-white px-7 py-3.5 text-sm font-semibold text-ink-700 transition hover:bg-ink-100"
+              >
+                ヒアリングを始める
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+              <a
+                href={`mailto:${contact.email}`}
+                className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/5 px-7 py-3.5 text-sm font-semibold text-white backdrop-blur transition hover:bg-white/10"
+              >
+                <Mail className="h-4 w-4" />
+                メールで連絡する
+              </a>
+            </div>
+            <p className="mt-6 text-xs text-white/40">{contact.note}</p>
+          </Reveal>
         </div>
       </section>
 
@@ -456,6 +514,3 @@ function ProductPreview() {
     </div>
   );
 }
-
-// Avoid TS6133 unused import in some build modes
-void ClipboardList;
