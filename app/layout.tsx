@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { siteConfig } from "./site-config";
 
 export const metadata: Metadata = {
-  title: "Brief — HP制作のためのヒアリング",
+  title: `${siteConfig.brand.name} — ${siteConfig.brand.role}`,
   description:
-    "クライアントの想いを、もっとシンプルに整える。HP制作のための専用ヒアリングツール。",
+    "想いを聴いてから、サイトをつくる。HP制作のための、丁寧なヒアリングから始まるWeb制作。",
 };
 
 export default function RootLayout({

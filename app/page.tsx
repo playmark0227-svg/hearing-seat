@@ -7,18 +7,21 @@ import {
   ArrowRight,
   ArrowUpRight,
   Check,
+  ChevronDown,
   ClipboardList,
   Copy,
   Link as LinkIcon,
+  Mail,
   Sparkles,
-  Wand2,
 } from "lucide-react";
+import { siteConfig } from "./site-config";
 
 const ease = [0.16, 1, 0.3, 1] as const;
 
 export default function LandingPage() {
   const [shareUrl, setShareUrl] = useState("");
   const [copied, setCopied] = useState(false);
+  const [openFaq, setOpenFaq] = useState<number | null>(0);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -38,41 +41,47 @@ export default function LandingPage() {
     }
   };
 
+  const { brand, hero, values, services, process: steps, faq, contact } =
+    siteConfig;
+
   return (
     <main className="min-h-screen bg-white text-ink-700">
-      {/* ───────── Header ───────── */}
+      {/* ─────── Header ─────── */}
       <header className="sticky top-0 z-40 border-b border-ink-100/80 bg-white/80 backdrop-blur-xl">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
           <Link href="/" className="flex items-center gap-2">
-            <span className="grid h-7 w-7 place-items-center rounded-xl bg-ink-700 text-[11px] font-bold text-white">
-              B
+            <span className="grid h-7 w-7 place-items-center rounded-lg bg-ink-700 text-[11px] font-bold text-white">
+              {brand.initial}
             </span>
             <span className="text-base font-semibold tracking-tight text-ink-700">
-              Brief
+              {brand.name}
             </span>
           </Link>
           <nav className="hidden items-center gap-8 text-sm text-ink-600 md:flex">
-            <a href="#feature" className="transition hover:text-ink-700">
-              特徴
+            <a href="#values" className="transition hover:text-ink-700">
+              強み
             </a>
-            <a href="#how" className="transition hover:text-ink-700">
-              使い方
+            <a href="#services" className="transition hover:text-ink-700">
+              サービス
             </a>
-            <a href="#share" className="transition hover:text-ink-700">
-              共有
+            <a href="#process" className="transition hover:text-ink-700">
+              制作の流れ
+            </a>
+            <a href="#faq" className="transition hover:text-ink-700">
+              FAQ
             </a>
           </nav>
           <Link
             href="/hearing"
             className="inline-flex items-center gap-1.5 rounded-full bg-ink-700 px-4 py-2 text-sm font-medium text-white transition hover:bg-ink-800"
           >
-            開始する
+            ヒアリング
             <ArrowRight className="h-3.5 w-3.5" />
           </Link>
         </div>
       </header>
 
-      {/* ───────── Hero ───────── */}
+      {/* ─────── Hero ─────── */}
       <section className="relative overflow-hidden">
         <div className="mx-auto max-w-5xl px-6 pb-28 pt-24 text-center sm:pt-36">
           <motion.p
@@ -81,7 +90,7 @@ export default function LandingPage() {
             transition={{ duration: 0.6, ease }}
             className="eyebrow"
           >
-            HP制作のための、ヒアリング
+            {hero.eyebrow}
           </motion.p>
 
           <motion.h1
@@ -90,20 +99,18 @@ export default function LandingPage() {
             transition={{ duration: 0.8, ease, delay: 0.1 }}
             className="mt-6 font-display text-5xl font-semibold leading-[1.04] tracking-tightest text-ink-700 sm:text-7xl"
           >
-            ヒアリングを、
+            {hero.headline_top}
             <br />
-            <span className="text-ink-500">もっと、シンプルに。</span>
+            <span className="text-ink-500">{hero.headline_bottom}</span>
           </motion.h1>
 
           <motion.p
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, ease, delay: 0.2 }}
-            className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-ink-500 sm:text-xl"
+            className="mx-auto mt-6 max-w-2xl whitespace-pre-line text-lg leading-relaxed text-ink-500 sm:text-xl"
           >
-            Brief は、HP制作のヒアリングをデザインしなおしたツールです。
-            <br className="hidden sm:block" />
-            約5分の選択式で、要件と想いをまとめます。
+            {hero.sub}
           </motion.p>
 
           <motion.div
@@ -113,12 +120,11 @@ export default function LandingPage() {
             className="mt-10 flex flex-wrap items-center justify-center gap-3"
           >
             <Link href="/hearing" className="btn-primary">
-              ヒアリングを始める
+              {hero.ctaPrimary}
               <ArrowRight className="h-4 w-4" />
             </Link>
-            <a href="#share" className="btn-ghost">
-              <LinkIcon className="h-4 w-4" />
-              共有用リンクを取得
+            <a href="#services" className="btn-ghost">
+              {hero.ctaSecondary}
             </a>
           </motion.div>
 
@@ -128,7 +134,7 @@ export default function LandingPage() {
             transition={{ duration: 0.8, delay: 0.5 }}
             className="mt-6 text-xs text-ink-400"
           >
-            登録不要・無料・ブラウザだけで完結
+            ヒアリングは登録不要・無料・5分で完了
           </motion.p>
         </div>
 
@@ -146,43 +152,25 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ───────── Why ───────── */}
-      <section className="bg-ink-100 px-6 pb-24 pt-44">
+      {/* ─────── Values ─────── */}
+      <section id="values" className="bg-ink-100 px-6 pb-24 pt-44">
         <div className="mx-auto max-w-5xl">
-          <p className="eyebrow text-center">なぜ Brief か</p>
+          <p className="eyebrow text-center">Why us</p>
           <h2 className="mt-4 text-center font-display text-3xl font-semibold leading-tight tracking-tight text-ink-700 sm:text-5xl">
-            ヒアリングが、止まらない。
-            <br />
-            <span className="text-ink-500">最後まで、気持ちよく。</span>
+            私たちが、大切にしていること。
           </h2>
 
           <div className="mt-16 grid gap-px overflow-hidden rounded-3xl bg-ink-200 sm:grid-cols-3">
-            {[
-              {
-                k: "01",
-                t: "迷わない選択式",
-                d: "ほぼ全ての質問が選択式。考えこまずに、直感のままに答えられます。",
-              },
-              {
-                k: "02",
-                t: "自分のペースで",
-                d: "ブラウザに自動保存。途中で離れても続きから再開できます。",
-              },
-              {
-                k: "03",
-                t: "そのまま要件書に",
-                d: "完了時に整形済みのサマリーを生成。提案書の下書きにそのまま使えます。",
-              },
-            ].map((b) => (
-              <div key={b.k} className="bg-white p-8 sm:p-10">
+            {values.map((v) => (
+              <div key={v.n} className="bg-white p-8 sm:p-10">
                 <div className="text-xs font-semibold tracking-widest text-accent">
-                  {b.k}
+                  {v.n}
                 </div>
                 <h3 className="mt-4 text-xl font-semibold tracking-tight text-ink-700">
-                  {b.t}
+                  {v.title}
                 </h3>
                 <p className="mt-3 text-sm leading-relaxed text-ink-500">
-                  {b.d}
+                  {v.desc}
                 </p>
               </div>
             ))}
@@ -190,111 +178,102 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ───────── Features detail ───────── */}
-      <section id="feature" className="px-6 py-32">
+      {/* ─────── Services ─────── */}
+      <section id="services" className="px-6 py-32">
         <div className="mx-auto max-w-5xl">
-          <p className="eyebrow">Features</p>
+          <p className="eyebrow">Services</p>
           <h2 className="mt-4 max-w-3xl font-display text-4xl font-semibold leading-[1.1] tracking-tight text-ink-700 sm:text-6xl">
-            7つの章で、抜け漏れなく。
+            提供しているサービス。
           </h2>
           <p className="mt-6 max-w-2xl text-lg text-ink-500">
-            基本情報から予算まで、HP制作に必要な要件を順序立ててお聞きします。
+            HP制作を軸に、コンセプト設計から公開後の運用までを一貫してサポートします。
           </p>
 
-          <div className="mt-16 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {[
-              { n: "01", t: "基本情報", d: "会社・サービス・担当者" },
-              { n: "02", t: "目的とゴール", d: "サイトで達成したいこと" },
-              { n: "03", t: "ターゲット", d: "届けたい相手と動かしたい行動" },
-              { n: "04", t: "デザインの方向性", d: "イメージワードとカラー" },
-              { n: "05", t: "構成と機能", d: "必要なページと機能" },
-              { n: "06", t: "素材・コンテンツ", d: "原稿・写真・ロゴの状況" },
-              { n: "07", t: "スケジュールと予算", d: "公開時期・予算・運用" },
-            ].map((q) => (
+          <div className="mt-16 grid gap-4 sm:grid-cols-2">
+            {services.map((s) => (
               <div
-                key={q.n}
-                className="group rounded-3xl border border-ink-150 bg-white p-6 transition hover:border-ink-300 hover:shadow-soft"
+                key={s.n}
+                className="group rounded-3xl border border-ink-150 bg-white p-8 transition hover:border-ink-300 hover:shadow-soft"
               >
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-semibold tracking-widest text-ink-400">
-                    {q.n}
+                    {s.n}
                   </span>
                   <ArrowUpRight className="h-4 w-4 text-ink-300 transition group-hover:text-ink-700" />
                 </div>
-                <h3 className="mt-6 text-lg font-semibold tracking-tight text-ink-700">
-                  {q.t}
+                <h3 className="mt-6 text-2xl font-semibold tracking-tight text-ink-700">
+                  {s.title}
                 </h3>
-                <p className="mt-1 text-sm text-ink-500">{q.d}</p>
+                <p className="mt-2 text-sm leading-relaxed text-ink-500">
+                  {s.desc}
+                </p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ───────── How it works ───────── */}
-      <section id="how" className="bg-ink-100 px-6 py-32">
+      {/* ─────── Process ─────── */}
+      <section id="process" className="bg-ink-100 px-6 py-32">
         <div className="mx-auto max-w-5xl">
-          <p className="eyebrow">How it works</p>
+          <p className="eyebrow">Process</p>
           <h2 className="mt-4 font-display text-4xl font-semibold leading-tight tracking-tight text-ink-700 sm:text-6xl">
-            手順は、3つだけ。
+            制作の流れ。
           </h2>
+          <p className="mt-6 max-w-2xl text-lg text-ink-500">
+            すべての始まりは、ヒアリングから。
+          </p>
 
-          <ol className="mt-16 grid gap-6 sm:grid-cols-3">
-            {[
-              {
-                n: "Step 1",
-                icon: <LinkIcon className="h-5 w-5" />,
-                t: "URLを共有",
-                d: "クライアントに専用URLを送るだけ。アカウント登録は不要です。",
-              },
-              {
-                n: "Step 2",
-                icon: <ClipboardList className="h-5 w-5" />,
-                t: "選択して回答",
-                d: "クライアントは選択式で5分ほどで回答完了。途中保存も自動です。",
-              },
-              {
-                n: "Step 3",
-                icon: <Wand2 className="h-5 w-5" />,
-                t: "サマリーで受け取り",
-                d: "整形された要件サマリーをコピーして、提案書の元データに。",
-              },
-            ].map((s) => (
+          <ol className="mt-16 space-y-3">
+            {steps.map((s) => (
               <li
-                key={s.n}
-                className="rounded-3xl bg-white p-8 shadow-soft"
+                key={s.step}
+                className={`group relative rounded-3xl border bg-white p-6 transition hover:shadow-soft sm:p-8 ${
+                  s.isHearing
+                    ? "border-ink-700 ring-2 ring-ink-700/10"
+                    : "border-ink-150"
+                }`}
               >
-                <div className="flex items-center gap-3">
-                  <span className="grid h-10 w-10 place-items-center rounded-xl bg-ink-700 text-white">
-                    {s.icon}
-                  </span>
-                  <span className="text-xs font-semibold tracking-widest text-ink-400">
-                    {s.n}
-                  </span>
+                <div className="grid items-start gap-4 sm:grid-cols-[8rem_1fr_auto]">
+                  <div className="text-xs font-semibold tracking-widest text-ink-400">
+                    STEP {s.step}
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-semibold tracking-tight text-ink-700">
+                      {s.title}
+                      {s.isHearing && (
+                        <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-ink-700 px-2 py-0.5 align-middle text-[10px] font-semibold text-white">
+                          ここから
+                        </span>
+                      )}
+                    </h3>
+                    <p className="mt-1.5 text-sm text-ink-500">{s.desc}</p>
+                  </div>
+                  {s.isHearing && (
+                    <Link
+                      href="/hearing"
+                      className="inline-flex items-center justify-center gap-1.5 self-center rounded-full bg-ink-700 px-4 py-2 text-xs font-medium text-white transition hover:bg-ink-800"
+                    >
+                      開始する
+                      <ArrowRight className="h-3.5 w-3.5" />
+                    </Link>
+                  )}
                 </div>
-                <h3 className="mt-6 text-xl font-semibold tracking-tight">
-                  {s.t}
-                </h3>
-                <p className="mt-2 text-sm leading-relaxed text-ink-500">
-                  {s.d}
-                </p>
               </li>
             ))}
           </ol>
         </div>
       </section>
 
-      {/* ───────── Share ───────── */}
+      {/* ─────── Hearing direct link ─────── */}
       <section id="share" className="px-6 py-32">
         <div className="mx-auto max-w-3xl text-center">
-          <p className="eyebrow">Share</p>
+          <p className="eyebrow">Start here</p>
           <h2 className="mt-4 font-display text-4xl font-semibold leading-tight tracking-tight text-ink-700 sm:text-6xl">
-            このURLを、
-            <br className="sm:hidden" />
-            送るだけ。
+            まずは、5分のヒアリングから。
           </h2>
           <p className="mt-6 text-lg text-ink-500">
-            クライアントへこのリンクを共有すると、そのままヒアリングが始まります。
+            ご担当者へのご共有も、このURLを送るだけで完結します。
           </p>
 
           <div className="mx-auto mt-10 flex max-w-2xl flex-col items-stretch gap-2 rounded-2xl border border-ink-200 bg-white p-2 shadow-soft sm:flex-row">
@@ -315,37 +294,70 @@ export default function LandingPage() {
                 </>
               ) : (
                 <>
-                  <Copy className="h-4 w-4" /> コピー
+                  <Copy className="h-4 w-4" /> リンクをコピー
                 </>
               )}
             </button>
           </div>
 
           <div className="mt-6 flex justify-center">
-            <Link
-              href="/hearing"
-              className="inline-flex items-center gap-1.5 text-sm font-medium text-accent hover:text-accent-dark"
-            >
-              自分で先に試してみる
-              <ArrowRight className="h-3.5 w-3.5" />
+            <Link href="/hearing" className="btn-primary">
+              ヒアリングを開始する
+              <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
         </div>
       </section>
 
-      {/* ───────── Final CTA (dark) ───────── */}
+      {/* ─────── FAQ ─────── */}
+      <section id="faq" className="bg-ink-100 px-6 py-32">
+        <div className="mx-auto max-w-3xl">
+          <p className="eyebrow text-center">FAQ</p>
+          <h2 className="mt-4 text-center font-display text-4xl font-semibold leading-tight tracking-tight text-ink-700 sm:text-5xl">
+            よくあるご質問。
+          </h2>
+
+          <div className="mt-12 space-y-2">
+            {faq.map((item, i) => (
+              <div
+                key={item.q}
+                className="overflow-hidden rounded-2xl border border-ink-150 bg-white"
+              >
+                <button
+                  onClick={() => setOpenFaq(openFaq === i ? null : i)}
+                  className="flex w-full items-center justify-between gap-4 px-6 py-5 text-left"
+                >
+                  <span className="text-sm font-semibold text-ink-700 sm:text-base">
+                    {item.q}
+                  </span>
+                  <ChevronDown
+                    className={`h-4 w-4 flex-shrink-0 text-ink-400 transition-transform ${
+                      openFaq === i ? "rotate-180" : ""
+                    }`}
+                  />
+                </button>
+                {openFaq === i && (
+                  <div className="border-t border-ink-100 px-6 py-5 text-sm leading-relaxed text-ink-600">
+                    {item.a}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ─────── Final CTA ─────── */}
       <section className="bg-ink-700 px-6 py-32 text-white">
         <div className="mx-auto max-w-4xl text-center">
           <Sparkles className="mx-auto h-6 w-6 text-white/60" />
           <h2 className="mt-6 font-display text-4xl font-semibold leading-tight tracking-tight sm:text-6xl">
-            最初の5分を、
-            <br className="sm:hidden" />
-            気持ちよく。
+            想いを、聴かせてください。
           </h2>
           <p className="mx-auto mt-6 max-w-xl text-lg text-white/60">
-            HP制作のスタート地点で、お互いの認識をひとつにそろえる。
+            HP制作のスタート地点で、お互いの認識をひとつに。
           </p>
-          <div className="mt-10 flex justify-center">
+          <div className="mt-10 flex flex-wrap items-center justify-center gap-3">
             <Link
               href="/hearing"
               className="inline-flex items-center gap-2 rounded-full bg-white px-7 py-3.5 text-sm font-semibold text-ink-700 transition hover:bg-ink-100"
@@ -353,46 +365,54 @@ export default function LandingPage() {
               ヒアリングを始める
               <ArrowRight className="h-4 w-4" />
             </Link>
+            <a
+              href={`mailto:${contact.email}`}
+              className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/5 px-7 py-3.5 text-sm font-semibold text-white backdrop-blur transition hover:bg-white/10"
+            >
+              <Mail className="h-4 w-4" />
+              メールで連絡する
+            </a>
           </div>
+          <p className="mt-6 text-xs text-white/40">{contact.note}</p>
         </div>
       </section>
 
-      {/* ───────── Footer ───────── */}
+      {/* ─────── Footer ─────── */}
       <footer className="border-t border-ink-100 px-6 py-10">
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 text-xs text-ink-400 sm:flex-row">
-          <span>© {new Date().getFullYear()} Brief.</span>
-          <span>HP制作のためのヒアリング</span>
+          <span>
+            © {new Date().getFullYear()} {brand.name}.
+          </span>
+          <span>{brand.role}</span>
         </div>
       </footer>
     </main>
   );
 }
 
-/* ───────── Product preview component ───────── */
+/* ─────── Product preview ─────── */
 
 function ProductPreview() {
   return (
     <div className="mx-auto w-full max-w-3xl rounded-[2.2rem] border border-ink-150 bg-white p-2 shadow-elev">
       <div className="rounded-[1.8rem] bg-ink-100 p-6 sm:p-10">
-        {/* Window chrome */}
         <div className="flex items-center gap-1.5">
           <span className="h-2.5 w-2.5 rounded-full bg-ink-300" />
           <span className="h-2.5 w-2.5 rounded-full bg-ink-300" />
           <span className="h-2.5 w-2.5 rounded-full bg-ink-300" />
+          <span className="ml-3 text-xs text-ink-400">ヒアリング</span>
         </div>
 
-        {/* Progress */}
         <div className="mt-8 flex items-center justify-between text-xs text-ink-500">
-          <span>4 / 7</span>
+          <span>Section 4 / 7</span>
           <span className="font-semibold text-ink-700">57%</span>
         </div>
         <div className="mt-2 h-1 w-full overflow-hidden rounded-full bg-ink-200">
           <div className="h-full w-[57%] bg-ink-700" />
         </div>
 
-        {/* Quest */}
         <div className="mt-10">
-          <p className="eyebrow">Section 4</p>
+          <p className="eyebrow">Section 04</p>
           <h3 className="mt-2 font-display text-2xl font-semibold tracking-tight text-ink-700 sm:text-3xl">
             デザインの方向性を、教えてください。
           </h3>
@@ -436,3 +456,6 @@ function ProductPreview() {
     </div>
   );
 }
+
+// Avoid TS6133 unused import in some build modes
+void ClipboardList;
