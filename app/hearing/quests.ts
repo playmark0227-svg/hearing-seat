@@ -39,8 +39,8 @@ export const QUESTS: Quest[] = [
   {
     id: 1,
     emoji: "🌱",
-    title: "Quest 1：はじまりの自己紹介",
-    subtitle: "まずは基本情報を教えてください",
+    title: "基本情報",
+    subtitle: "まずは、御社のことを教えてください。",
     color: "from-neon-pink to-neon-purple",
     fields: [
       {
@@ -87,8 +87,8 @@ export const QUESTS: Quest[] = [
   {
     id: 2,
     emoji: "🎯",
-    title: "Quest 2：サイトの目的を定める",
-    subtitle: "このHPで何を達成したいですか？（複数選択OK）",
+    title: "目的とゴール",
+    subtitle: "このサイトで、何を達成したいですか？",
     color: "from-neon-purple to-neon-blue",
     fields: [
       {
@@ -119,8 +119,8 @@ export const QUESTS: Quest[] = [
   {
     id: 3,
     emoji: "👥",
-    title: "Quest 3：届けたい相手を描こう",
-    subtitle: "ターゲットユーザーをイメージしてください",
+    title: "ターゲット",
+    subtitle: "届けたい相手を、思い描いてください。",
     color: "from-neon-blue to-neon-lime",
     fields: [
       {
@@ -150,8 +150,8 @@ export const QUESTS: Quest[] = [
   {
     id: 4,
     emoji: "🎨",
-    title: "Quest 4：デザインの方向性",
-    subtitle: "“らしさ” を一緒に言語化しましょう",
+    title: "デザインの方向性",
+    subtitle: "“らしさ” を言語化していきましょう。",
     color: "from-neon-pink to-neon-gold",
     fields: [
       {
@@ -203,8 +203,8 @@ export const QUESTS: Quest[] = [
   {
     id: 5,
     emoji: "🧩",
-    title: "Quest 5：構成と機能を選ぼう",
-    subtitle: "必要なページ・機能をチェック",
+    title: "構成と機能",
+    subtitle: "必要なページと機能を選んでください。",
     color: "from-neon-purple to-neon-pink",
     fields: [
       {
@@ -249,8 +249,8 @@ export const QUESTS: Quest[] = [
   {
     id: 6,
     emoji: "📦",
-    title: "Quest 6：素材・コンテンツの状況",
-    subtitle: "今ある素材を教えてください",
+    title: "素材・コンテンツ",
+    subtitle: "今ある素材を、教えてください。",
     color: "from-neon-lime to-neon-blue",
     fields: [
       {
@@ -293,8 +293,8 @@ export const QUESTS: Quest[] = [
   {
     id: 7,
     emoji: "🚀",
-    title: "Quest 7：スケジュールと予算",
-    subtitle: "最後の章！実現に向けた条件を教えてください",
+    title: "スケジュールと予算",
+    subtitle: "実現に向けた条件を、教えてください。",
     color: "from-neon-gold to-neon-pink",
     fields: [
       {

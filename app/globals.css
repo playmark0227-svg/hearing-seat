@@ -4,10 +4,12 @@
 
 :root {
   --font-sans:
-    "Inter", "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP",
-    Meiryo, system-ui, sans-serif;
+    -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text",
+    "Helvetica Neue", "Hiragino Sans", "Hiragino Kaku Gothic ProN",
+    "Noto Sans JP", system-ui, sans-serif;
   --font-display:
-    "Inter", "Hiragino Sans", "Noto Sans JP", system-ui, sans-serif;
+    -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue",
+    "Hiragino Sans", "Noto Sans JP", system-ui, sans-serif;
 }
 
 html,
@@ -17,43 +19,46 @@ body {
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  color: #1d1d1f;
+  background: #ffffff;
 }
 
 * {
   box-sizing: border-box;
 }
 
+::selection {
+  background: #1d1d1f;
+  color: #fff;
+}
+
 @layer components {
   .btn-primary {
-    @apply inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-neon-pink via-neon-purple to-neon-blue px-6 py-3 font-semibold text-white shadow-lg shadow-neon-purple/30 transition-transform hover:scale-[1.03] active:scale-[0.98];
+    @apply inline-flex items-center justify-center gap-2 rounded-full bg-ink-700 px-6 py-3 text-sm font-medium text-white transition-all duration-200 hover:bg-ink-800 active:scale-[0.98];
   }
-  .btn-secondary {
-    @apply inline-flex items-center justify-center gap-2 rounded-full border border-white/30 bg-white/10 px-6 py-3 font-semibold text-white backdrop-blur transition hover:bg-white/20;
+  .btn-accent {
+    @apply inline-flex items-center justify-center gap-2 rounded-full bg-accent px-6 py-3 text-sm font-medium text-white transition-all duration-200 hover:bg-accent-dark active:scale-[0.98];
   }
-  .chip {
-    @apply inline-flex items-center gap-1 rounded-full border border-white/15 bg-white/5 px-3 py-1 text-xs font-medium text-white/80;
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 rounded-full border border-ink-200 bg-white px-6 py-3 text-sm font-medium text-ink-700 transition-all duration-200 hover:border-ink-300 hover:bg-ink-50;
   }
-  .card {
-    @apply rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl;
+  .btn-dark-ghost {
+    @apply inline-flex items-center justify-center gap-2 rounded-full border border-white/20 bg-white/5 px-6 py-3 text-sm font-medium text-white backdrop-blur transition hover:bg-white/10;
   }
-  .shimmer-text {
-    background: linear-gradient(
-      90deg,
-      #fff 0%,
-      #ffd24f 25%,
-      #fff 50%,
-      #4fc3ff 75%,
-      #fff 100%
-    );
-    background-size: 200% auto;
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-    animation: shimmer 3.5s linear infinite;
+  .display-1 {
+    @apply font-display text-5xl font-semibold leading-[1.05] tracking-tightest text-ink-700 sm:text-7xl;
+  }
+  .display-2 {
+    @apply font-display text-3xl font-semibold leading-[1.1] tracking-tight text-ink-700 sm:text-5xl;
+  }
+  .eyebrow {
+    @apply text-xs font-semibold uppercase tracking-[0.18em] text-ink-500;
+  }
+  .input-clean {
+    @apply w-full rounded-2xl border border-ink-200 bg-white px-4 py-3 text-sm text-ink-700 placeholder:text-ink-400 outline-none transition focus:border-ink-700 focus:ring-2 focus:ring-ink-700/10;
   }
 }
 
-/* Pretty scrollbar in summary modal */
 .scroll-pretty::-webkit-scrollbar {
   width: 8px;
 }
@@ -61,6 +66,13 @@ body {
   background: transparent;
 }
 .scroll-pretty::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.18);
+  background: rgba(0, 0, 0, 0.12);
   border-radius: 8px;
+}
+
+@media print {
+  body {
+    background: #fff !important;
+    color: #000 !important;
+  }
 }

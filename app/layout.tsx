@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "QuestHearing｜HP制作ヒアリングを冒険に変える",
+  title: "Brief — HP制作のためのヒアリング",
   description:
-    "ゲーム感覚で楽しく進められるHP制作のヒアリングツール。クライアントの想いを最短ルートで言語化します。",
+    "クライアントの想いを、もっとシンプルに整える。HP制作のための専用ヒアリングツール。",
 };
 
 export default function RootLayout({
@@ -14,7 +14,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="ja">
-      <body className="bg-ink-900 text-white antialiased">{children}</body>
+      <body className="bg-white text-ink-700 antialiased">{children}</body>
     </html>
   );
 }
